@@ -9,76 +9,99 @@ with Client(
     # secret from env
     f'{os.environ["HOME_ASSISTANT_SECRET"]}',
 ) as client:
+    while True:
+        prompt = input('Enter your request: ')
 
-    prompt = sys.argv[1]
+        print(f'User Request: {prompt}')
 
-    print(f'User Request: {prompt}')
+        entites = {
+            'light.lamp_light': 'living room lamp',
+            'switch.heater_switch': 'living room heater',
+            'switch.living_room_radiator': 'living room radiator',
+            'switch.wax_melter': 'Bedroom wax melter',
+            'switch.dehumidifier': 'Dehumidifier',
+            'switch.bed_warmer_switch': 'Bed warmer',
+            'light.bedroom_lamps': 'Bedroom lamps',
+        } 
 
-    entites = {
-        'light.lamp_light': 'living room lamp',
-        'switch.heater_switch': 'living room heater',
-        'switch.living_room_radiator': 'living room radiator',
-        'switch.wax_melter': 'Bedroom wax melter',
-        'switch.dehumidifier': 'Dehumidifier',
-    } 
+        entites_str = '\n'.join([f'entity:{entity} friendly_name:{action}' for entity, action in entites.items()])
 
-    system_message = f"""
-        You are a home assistant. You can control the home devices depending on the user's request.
-        The user can say "Turn off living room lamp" to turn off the living room lamp.
-        Here are the entities {str(entites)}. 
-        \nFor example you should repond with: 
-        \n\nentity:light.lamp_light action:off
-        \n\nStrictly follow the format and the entities provided.
-        \n\nDo not refer to any other entities. So you can make assumptions about the entities. For example if the user says "Turn off the living room light", and there is no other entitiy referring light, you can assume that the user is referring to the living room lamp.
-        \nThe user can request multiple actions in a single request. For example "Turn off the living room lamp and turn on the living room heater".
-        \nThis can be done by putting each entity and action in a new line.
-        \n\nFor example you should repond with:
-        \n\nentity:light.lamp_light action:off
-        \nentity:switch.heater_switch action:on
-    """
+        system_message = f"""
+            As a home assistant, your role is to interpret user requests to control home devices. Users might request actions like turning devices on or off.\n\n
 
-    def main():
+            Available devices and their commands are as follows:\n
+            {entites_str}\n\n
 
-        response = requests.post('http://localhost:11434/api/generate', json={
-            'prompt': f'Your instructions: {system_message} \n\n User Request: {prompt}',
-            'model': 'llama2:7b-chat',
-            'stream': False,
-        })
+            Format your response as 'entity:action', where 'entity' is the device identifier and 'action' is either 'on', 'off', or 'toggle'. \n\n
 
-        data = response.json()
+            Examples:\n
+            - To turn off the living room lamp: entity:light.lamp_light action:off\n
+            - To turn on the living room heater: entity:switch.heater_switch action:on\n\n
 
-        if data['done']:
-            print(data['response'])
+            For multiple actions in a single request, separate each command by a new line.\n\n
 
-            actions = data['response'].split('\n')
-            
-            print(f'Actions: {actions}')
+            Remember to use only the provided entity identifiers and actions. If the request refers to a device in a general term, use your judgment based on the available entities. For instance, if asked to 'turn off the living room light' with no specific entity for a light, assume the user means the 'living room lamp'.\n\n
 
-            for action in actions:
-                entity = action.split(' ')[0].split(':')[1].strip()
-                action = action.split(' ')[1].split(':')[1].strip()
-            
-                print(f'entity:{entity} action:{action}')
-    #
-                supported_domains = ['automation', 'input_boolean', 'remote', 'script', 'binary_sensor', 'climate', 'cover', 'device_tracker', 'fan', 'light', 'lock', 'media_player', 'sensor', 'switch']
+            Example of good response:\n
+            User Request: I am going to bed in half an hour can you prepeare the bedroom\n\n
+
+            Response:\n\n
+            entity:light.bedroom_lamps action:on\n
+            entity:switch.bed_warmer_switch action:on\n
+            entity:switch.wax_melter action:on\n\n
+
+            Example of bad response:\n
+            User Request: I am going to bed in half an hour can you prepeare the bedroom\n
+            Actions:\n
+            entity:bedroom_lamps action:on\n
+            entity:bed_warmer_switch action:off\n
+            entity:wax_melter action:off\n\n
+
+            The user will want the lights on to see, the bed warmer on to warm the bed, and the wax melter on to create a nice smell. This will create a nice atmosphere for the user to go to bed.
+        """
+
+        def main():
+
+            response = requests.post('http://localhost:11434/api/generate', json={
+                'prompt': f'Your instructions: {system_message} \n\n User Request: {prompt}',
+                'model': 'llama2:7b-chat',
+                'stream': False,
+            })
+
+            data = response.json()
+
+            if data['done']:
+                print(data['response'])
+
+                actions = data['response'].split('\n')
                 
-                domain = entity.split('.')[0]
+                print(f'Actions: {actions}')
 
-                if domain in supported_domains:
-                    device = client.get_domain(domain)
+                for action in actions:
+                    entity = action.split(' ')[0].split(':')[1].strip()
+                    action = action.split(' ')[1].split(':')[1].strip()
+                
+                    print(f'entity:{entity} action:{action}')
+        #
+                    supported_domains = ['automation', 'input_boolean', 'remote', 'script', 'binary_sensor', 'climate', 'cover', 'device_tracker', 'fan', 'light', 'lock', 'media_player', 'sensor', 'switch']
+                    
+                    domain = entity.split('.')[0]
 
-                    if action == 'on':
-                        device.turn_on(entity_id=entity)
-                    if action == 'off':
-                        device.turn_off(entity_id=entity)
-                    if action == 'toggle':
-                        device.toggle(entity_id=entity)
+                    if domain in supported_domains:
+                        device = client.get_domain(domain)
 
-                else:
-                    print('Error: Entity type not supported.')
+                        if action == 'on':
+                            device.turn_on(entity_id=entity)
+                        if action == 'off':
+                            device.turn_off(entity_id=entity)
+                        if action == 'toggle':
+                            device.toggle(entity_id=entity)
 
-        else:
-            print('Error: ', data['error'])
+                    else:
+                        print('Error: Entity type not supported.')
 
-    if __name__ == '__main__':
-        main()
+            else:
+                print('Error: ', data['error'])
+
+        if __name__ == '__main__':
+            main()
