@@ -3,7 +3,7 @@ import sys
 import requests
 
 from homeassistant_api import Client
-from system_message import get_message
+from system_message import get_action_message, get_user_message
 
 with Client(
     'http://homeassistant.local:8123/api',
@@ -26,24 +26,24 @@ with Client(
         } 
 
         entites_str = '\n'.join([f'entity:{entity} friendly_name:{action}' for entity, action in entites.items()])
-        
-        system_message = get_message(entites_str)
+
+        action_system_message = get_action_message(entites_str)
 
         def main():
 
-            response = requests.post('http://localhost:11434/api/generate', json={
+            action_response = requests.post('http://localhost:11434/api/generate', json={
                 'prompt': f'Your instructions: {system_message} \n\n User Request: {prompt}',
                 'model': 'llama2:7b-chat',
                 'stream': False,
             })
 
-            data = response.json()
+            data = action_response.json()
 
             if data['done']:
                 try:
                     actions = data['response'].split('\n')
-                    
-                    print(f'Actions: {actions}')
+
+                    user_system_message = get_user_message(actions.join(', '), prompt)
 
                     for action in actions:
                         try:
@@ -70,6 +70,19 @@ with Client(
                                 print('Error: Entity type not supported.')
                         except:
                             print('Error: Invalid action format.')
+
+                    human_response = requests.post('http://localhost:11434/api/generate', json={
+                        'prompt': user_system_message,
+                        'model': 'llama2:7b-chat',
+                        'stream': False,
+                    })
+
+                    human_data = human_response.json()
+
+                    if human_data['done']:
+                        print(human_data['response'])
+                    else:
+                        print('Error: Invalid response format.')
                 except:
                     print('Error: Invalid response format.')
             else:
