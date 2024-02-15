@@ -40,51 +40,48 @@ with Client(
             data = action_response.json()
 
             if data['done']:
-                try:
-                    actions = data['response'].split('\n')
+                actions = data['response'].split('\n')
 
-                    user_system_message = get_user_message(actions.join(', '), prompt)
+                user_system_message = get_user_message(actions.join(', '), prompt)
 
-                    for action in actions:
-                        try:
-                            entity = action.split(' ')[0].split(':')[1].strip()
-                            action = action.split(' ')[1].split(':')[1].strip()
+                for action in actions:
+                    try:
+                        entity = action.split(' ')[0].split(':')[1].strip()
+                        action = action.split(' ')[1].split(':')[1].strip()
+                    
+                        print(f'entity:{entity} action:{action}')
+            #
+                        supported_domains = ['automation', 'input_boolean', 'remote', 'script', 'binary_sensor', 'climate', 'cover', 'device_tracker', 'fan', 'light', 'lock', 'media_player', 'sensor', 'switch']
                         
-                            print(f'entity:{entity} action:{action}')
-                #
-                            supported_domains = ['automation', 'input_boolean', 'remote', 'script', 'binary_sensor', 'climate', 'cover', 'device_tracker', 'fan', 'light', 'lock', 'media_player', 'sensor', 'switch']
-                            
-                            domain = entity.split('.')[0]
+                        domain = entity.split('.')[0]
 
-                            if domain in supported_domains:
-                                device = client.get_domain(domain)
+                        if domain in supported_domains:
+                            device = client.get_domain(domain)
 
-                                if action == 'on':
-                                    device.turn_on(entity_id=entity)
-                                if action == 'off':
-                                    device.turn_off(entity_id=entity)
-                                if action == 'toggle':
-                                    device.toggle(entity_id=entity)
+                            if action == 'on':
+                                device.turn_on(entity_id=entity)
+                            if action == 'off':
+                                device.turn_off(entity_id=entity)
+                            if action == 'toggle':
+                                device.toggle(entity_id=entity)
 
-                            else:
-                                print('Error: Entity type not supported.')
-                        except:
-                            print('Error: Invalid action format.')
+                        else:
+                            print('Error: Entity type not supported.')
+                    except:
+                        print('Error: Invalid action format.')
 
-                    human_response = requests.post('http://localhost:11434/api/generate', json={
-                        'prompt': user_system_message,
-                        'model': 'llama2:7b-chat',
-                        'stream': False,
-                    })
+                human_response = requests.post('http://localhost:11434/api/generate', json={
+                    'prompt': user_system_message,
+                    'model': 'llama2:7b-chat',
+                    'stream': False,
+                })
 
-                    human_data = human_response.json()
+                human_data = human_response.json()
 
-                    if human_data['done']:
-                        print(human_data['response'])
-                    else:
-                        print('Error: Invalid response format.')
-                except:
-                    print('Error: Invalid response format.')
+                if human_data['done']:
+                    print(human_data['response'])
+                else:
+                    print('Error: Invalid response format.')                    
             else:
                 print('Error: ', data['error'])
 
