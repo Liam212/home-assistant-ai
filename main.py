@@ -15,7 +15,11 @@ with Client(
     print(f'User Request: {prompt}')
 
     entites = {
-        'light.lamp_light': 'living room lamp'
+        'light.lamp_light': 'living room lamp',
+        'switch.heater_switch': 'living room heater',
+        'switch.living_room_radiator': 'living room radiator',
+        'switch.wax_melter': 'Bedroom wax melter',
+        'switch.dehumidifier': 'Dehumidifier',
     } 
 
     system_message = f"""
@@ -26,6 +30,11 @@ with Client(
         \n\nentity:light.lamp_light action:off
         \n\nStrictly follow the format and the entities provided.
         \n\nDo not refer to any other entities. So you can make assumptions about the entities. For example if the user says "Turn off the living room light", and there is no other entitiy referring light, you can assume that the user is referring to the living room lamp.
+        \nThe user can request multiple actions in a single request. For example "Turn off the living room lamp and turn on the living room heater".
+        \nThis can be done by putting each entity and action in a new line.
+        \n\nFor example you should repond with:
+        \n\nentity:light.lamp_light action:off
+        \nentity:switch.heater_switch action:on
     """
 
     def main():
@@ -41,22 +50,32 @@ with Client(
         if data['done']:
             print(data['response'])
 
-            entity = data['response'].split(' ')[0].split(':')[1]
-            action = data['response'].split(' ')[1].split(':')[1]
+            actions = data['response'].split('\n')
             
-            print(f'entity:{entity} action:{action}')
+            print(f'Actions: {actions}')
 
-            if entity.split('.')[0] == 'light':
-                device = client.get_domain("light")
+            for action in actions:
+                entity = action.split(' ')[0].split(':')[1].strip()
+                action = action.split(' ')[1].split(':')[1].strip()
+            
+                print(f'entity:{entity} action:{action}')
+    #
+                supported_domains = ['automation', 'input_boolean', 'remote', 'script', 'binary_sensor', 'climate', 'cover', 'device_tracker', 'fan', 'light', 'lock', 'media_player', 'sensor', 'switch']
+                
+                domain = entity.split('.')[0]
 
-                if action == 'on':
-                    device.turn_on(entity_id=entity)
-                if action == 'off':
-                    device.turn_off(entity_id=entity)
-                if action == 'toggle':
-                    device.toggle(entity_id=entity)
-            else:
-                print('Error: Entity type not supported.')
+                if domain in supported_domains:
+                    device = client.get_domain(domain)
+
+                    if action == 'on':
+                        device.turn_on(entity_id=entity)
+                    if action == 'off':
+                        device.turn_off(entity_id=entity)
+                    if action == 'toggle':
+                        device.toggle(entity_id=entity)
+
+                else:
+                    print('Error: Entity type not supported.')
 
         else:
             print('Error: ', data['error'])
