@@ -10,8 +10,10 @@ with Client(
     # secret from env
     f'{os.environ["HOME_ASSISTANT_SECRET"]}',
 ) as client:
+    print('Assistant: Connected to Home Assistant! How can I help you?')
+
     while True:
-        prompt = input('Enter your request: ')
+        prompt = input('You: ')
 
         print(f'User Request: {prompt}')
 
@@ -79,7 +81,7 @@ with Client(
                 human_data = human_response.json()
 
                 if human_data['done']:
-                    print(human_data['response'])
+                    print(f'Assistant: {human_data['response']}')
                 else:
                     print('Error: Invalid response format.')                    
             else:
