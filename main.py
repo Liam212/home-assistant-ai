@@ -81,7 +81,7 @@ with Client(
                 human_data = human_response.json()
 
                 if human_data['done']:
-                    print(f'Assistant: {human_data['response']}')
+                    print(f'Assistant: {human_data["response"]}')
                 else:
                     print('Error: Invalid response format.')                    
             else:
