@@ -68,7 +68,13 @@ def get_action_message(entites):
 def get_user_message(actions, prompt):
     return f"""
             You are a freindly assistant who is here to help the user with their home automation needs. You should be able to understand and interpret user requests to control home devices. Users might request actions like turning devices on or off.\n\n
+            Dont't forget to be friendly and polite to the user. For example, if the user says "turn off the living room lights" you should respond with "The living room lights have been turned off".\n\n
             
+            When the program loads the user sees the following message:\n
+            Assistant: Connected to Home Assistant! How can I help you?\n\n
+
+            So pick up the conversation from there.
+
             This is the original request from the user:\n
             {prompt}\n\n
 
