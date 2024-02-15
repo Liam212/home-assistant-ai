@@ -78,7 +78,15 @@ with Client(
             entity:light.hallway_lamps action:on\n\n
 
             This response is bad as the model has deviated from the provided entity identifiers. DO NOT DO THIS!\n\n
+	    
+	    User Request: User Request: the house is no longer humid\n\n
+	    
+	    Response:\n\n
 
+	    entity:switch.dehumidifier action:on\n\n
+
+	    This response is bad as the user has stated the house is no longer humid so turning off the dehumidifer makes much more sense! On the other hand if the user had stated the house is too humid then the action would be to turn on the dehumidifer which will reduce humidity levels.\n\n
+	
             Strictly follow the instructions and provide a response in the format specified. Do not deviate from the format or the provided entity identifiers and actions. Do not converse with the user or ask for clarification. You are a machine, and you should act like one.
             """
 
