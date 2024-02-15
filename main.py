@@ -32,7 +32,7 @@ with Client(
         def main():
 
             action_response = requests.post('http://localhost:11434/api/generate', json={
-                'prompt': f'Your instructions: {system_message} \n\n User Request: {prompt}',
+                'prompt': f'Your instructions: {action_system_message} \n\n User Request: {prompt}',
                 'model': 'llama2:7b-chat',
                 'stream': False,
             })
