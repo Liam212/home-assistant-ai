@@ -42,7 +42,7 @@ with Client(
             if data['done']:
                 actions = data['response'].split('\n')
 
-                user_system_message = get_user_message(actions.join(', '), prompt)
+                user_system_message = get_user_message(', '.join(actions), prompt)
 
                 for action in actions:
                     try:
